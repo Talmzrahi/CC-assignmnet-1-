@@ -61,16 +61,14 @@ cc
 {"greeting":"Hi from Tal","hostname":"03db806302e5"}
 ```
 
-
-
-
 ## Configuration
 
-| Variable | Default | What it does |
+|| Variable | Default | What it does |
 |:--|:--|:--|
-| `GREETING` | | |
-| `DATA_DIR` | | |
-| `PORT` | | |
+| `GREETING` | `Hello from the container` | Text returned by `GET /`. Override with `-e GREETING="..."` to change the response without rebuilding. |
+| `DATA_DIR` | `/data` | Folder where the counter file is stored. Matches the `VOLUME` and the folder owned by `user6210`, so the named volume can be written to. |
+| `PORT` | `8000` | Port the app listens on inside the container. Published to the host with `-p <host>:8000`. |
+
 
 ## Part B — layers and cache
 
