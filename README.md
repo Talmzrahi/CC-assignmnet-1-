@@ -16,20 +16,53 @@ TODO — two or three sentences. What the application does and what you did to i
 Commands someone else can paste, in order, with no edits beyond a name or a path.
 
 ```bash
-TODO
+docker build -t cc-app:1.0 .
+docker run -d --name cc -p 8000:8000 -v ccdata:/data cc-app:1.0
+sleep 3
+curl http://localhost:8000/
+curl http://localhost:8000/count
+curl http://localhost:8000/healthz
+docker exec cc id
 ```
 
 Expected output:
 
 ```
-TODO
+{"greeting":"Hello from the container","hostname":"2a68251746b0"}
+{"count":1,"stored_in":"/data/counter.json"}
+{"status":"ok"}
+uid=6210(user6210) gid=6210(user6210) groups=6210(user6210)
 ```
 
 Show the counter surviving a container restart:
 
 ```bash
-TODO
+curl.exe http://localhost:8000/count
+docker rm -f cc
+docker run -d --name cc -p 8000:8000 -v ccdata:/data cc-app:1.0
+Start-Sleep 3
+curl.exe http://localhost:8000/count
+
+{"count":2,"stored_in":"/data/counter.json"}
+cc
+1e5bb1b5888aae21b6f1d8b074069b049506d198d3d03fa72b54b48860c1762d
+{"count":3,"stored_in":"/data/counter.json"}
 ```
+
+
+Overriding configuration at run time:
+
+```bash
+docker run -d --name cc -p 8000:8000 -v ccdata:/data -e GREETING="Hi from Tal" cc-app:1.0
+Start-Sleep 3
+curl.exe http://localhost:8000/
+cc
+03db806302e5f84b380e80442db56ef84ef57dac83d94fd8d0f794648e285d07
+{"greeting":"Hi from Tal","hostname":"03db806302e5"}
+```
+
+
+
 
 ## Configuration
 
