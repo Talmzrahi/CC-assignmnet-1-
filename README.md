@@ -364,6 +364,30 @@ HTTP/1.1 200 OK
 ]
 ```
 
+#### Screenshots of the terminal session
+
+Subscription, tenant and identity IDs are blacked out in the identity screenshot.
+
+**C1: building the image for `linux/amd64` and pushing it to ACR**
+
+![Build for linux/amd64](evidence/screenshots/c1-build-amd64.png)
+
+![Push to ACR](evidence/screenshots/c1-push.png)
+
+**C2: managed identity with AcrPull, then the container created and running on ACI**
+
+![Managed identity, AcrPull role and container create](evidence/screenshots/c2-identity-and-aci.png)
+
+**C2 and C3: container state, logs, and requests to the public IP**
+
+![Container running and first requests](evidence/screenshots/c2-c3-running-and-requests.png)
+
+![Requests to /healthz and /count](evidence/screenshots/c3-requests.png)
+
+**C4 and clean-up: the secure variable reads `null`, and the resource group is deleted**
+
+![Secure variable and resource group deleted](evidence/screenshots/c4-secure-var-and-cleanup.png)
+
 Which value you passed as a **secure** environment variable, and how you know it is not
 readable afterwards:
 
