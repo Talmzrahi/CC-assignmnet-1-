@@ -238,8 +238,130 @@ Build output after changing `/healthz` to `"ok -b3v3"` (full log in `evidence/b3
 
 The `az` commands you actually ran, in order:
 
-```bash
-TODO
+```powershell
+# names used throughout
+$RG = "rg-cc-a1-tal"; $LOC = "francecentral"; $ACR = "cca1tal6210"
+
+# resource group and registry (admin user disabled, no passwords)
+az acr check-name --name $ACR -o table
+az group create --name $RG --location $LOC -o table
+az acr create --resource-group $RG --name $ACR --sku Basic --admin-enabled false -o table
+
+# build for ACI's CPU (the laptop is arm64) and push
+az acr login --name $ACR
+docker build --platform linux/amd64 --provenance=false --sbom=false -t "$ACR.azurecr.io/cc-demo:v1" .
+docker push "$ACR.azurecr.io/cc-demo:v1"
+az acr repository show-tags --name $ACR --repository cc-demo -o table
+
+# user-assigned managed identity with pull-only access to this registry
+az identity create -g $RG -n id-cc-a1 -o table
+$ID = az identity show -g $RG -n id-cc-a1 --query id -o tsv
+$PRINCIPAL = az identity show -g $RG -n id-cc-a1 --query principalId -o tsv
+$ACRID = az acr show -n $ACR --query id -o tsv
+az role assignment create --assignee-object-id $PRINCIPAL --assignee-principal-type ServicePrincipal --role AcrPull --scope $ACRID
+az role assignment list --assignee $PRINCIPAL --scope $ACRID --query "[].roleDefinitionName" -o tsv
+
+# run on ACI with a public IP, one plain and one secure environment variable
+az container create -g $RG -n aci-cc-a1 --image "$ACR.azurecr.io/cc-demo:v1" --os-type Linux `
+  --cpu 1 --memory 1 --ports 8000 --ip-address Public `
+  --assign-identity $ID --acr-identity $ID `
+  --environment-variables 'GREETING=Hello from Azure' `
+  --secure-environment-variables 'SECRET_TOKEN=not-a-real-secret'
+
+# evidence
+az container show -g $RG -n aci-cc-a1 --query "{name:name, state:instanceView.state, provisioning:provisioningState, image:containers[0].image, os:osType, ip:ipAddress.ip, port:ipAddress.ports[0].port, identity:identity.type}" -o json   # c2-aci.txt
+az container logs -g $RG -n aci-cc-a1                   # c2-aci.txt
+$IP = az container show -g $RG -n aci-cc-a1 --query ipAddress.ip -o tsv
+curl.exe -i "http://${IP}:8000/"                        # c3-request.txt (also /healthz, /count x2)
+az container show -g $RG -n aci-cc-a1 --query "containers[0].environmentVariables" -o json   # c4-secure-var.txt
+
+# clean up
+az group delete --name $RG --yes
+az group exists --name $RG                              # false
+```
+
+#### What Azure returned while it was running
+
+The resource group has since been deleted, so this output (copied from `evidence/`) is the
+record of the deployment.
+
+**C1: image pushed to ACR** (`evidence/c1-acr.txt`). The image was built for `linux/amd64`
+and the registry holds tag `v1`:
+
+```
+The push refers to repository [cca1tal6210.azurecr.io/cc-demo]
+06ad939ed42b: Pushed
+3764a9a7d1e8: Pushed
+f037cf4a1889: Pushed
+b996c5333548: Pushed
+bfc2075b6144: Pushed
+c4503275aa93: Pushed
+6b37362b3da7: Pushed
+b0dc7f87bef1: Pushed
+v1: digest: sha256:e143deac5e69771d3ee459acda9f01a3975d3db288d5a31171b8d95a543ccda5 size: 1811
+
+> az acr repository show-tags --name cca1tal6210 --repository cc-demo -o table
+Result
+--------
+v1
+```
+
+**C2: container running on ACI** (`evidence/c2-aci.txt`):
+
+```
+{
+  "identity": "UserAssigned",
+  "image": "cca1tal6210.azurecr.io/cc-demo:v1",
+  "ip": "20.19.132.70",
+  "name": "aci-cc-a1",
+  "os": "Linux",
+  "port": 8000,
+  "provisioning": "Succeeded",
+  "state": "Running"
+}
+--- container logs ---
+listening on port 8000
+ * Serving Flask app 'app'
+ * Debug mode: off
+ * Running on all addresses (0.0.0.0)
+```
+
+**C3: requests to the public IP** (`evidence/c3-request.txt`, headers trimmed here):
+
+```
+> curl.exe -i http://20.19.132.70:8000/
+HTTP/1.1 200 OK
+{"greeting":"Hello from Azure","hostname":"SandboxHost-639261028674259153"}
+
+> curl.exe -i http://20.19.132.70:8000/healthz
+HTTP/1.1 200 OK
+{"status":"ok -b3v3"}
+
+> curl.exe -i http://20.19.132.70:8000/count
+HTTP/1.1 200 OK
+{"count":1,"stored_in":"/data/counter.json"}
+
+> curl.exe -i http://20.19.132.70:8000/count
+HTTP/1.1 200 OK
+{"count":2,"stored_in":"/data/counter.json"}
+```
+
+**C4: the secure variable reads `null`** (`evidence/c4-secure-var.txt`):
+
+```
+> az container show -g rg-cc-a1-tal -n aci-cc-a1 --query containers[0].environmentVariables
+[
+  {
+    "name": "GREETING",
+    "secureValue": null,
+    "value": "Hello from Azure"
+  },
+  {
+    "name": "SECRET_TOKEN",
+    "secureValue": null,
+    "value": null
+  }
+]
 ```
 
 Which value you passed as a **secure** environment variable, and how you know it is not
