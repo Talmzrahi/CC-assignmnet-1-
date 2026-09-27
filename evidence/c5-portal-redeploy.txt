@@ -1,0 +1,33 @@
+Second deployment of the same image (sha256:e143deac...) on 27 Sep 2026, made only to take the portal screenshots in evidence/screenshots/portal-*.png. Same commands as in the README; the resource group was deleted again afterwards.
+
+> az acr repository show --name cca1tal6210 --image cc-demo:v1 --query "{digest:digest, tag:name}"
+{
+  "digest": "sha256:e143deac5e69771d3ee459acda9f01a3975d3db288d5a31171b8d95a543ccda5",
+  "tag": "v1"
+}
+> az container show -g rg-cc-a1-tal -n aci-cc-a1 --query "{state:instanceView.state, image:containers[0].image, ip:ipAddress.ip}"
+{
+  "image": "cca1tal6210.azurecr.io/cc-demo:v1",
+  "ip": "4.178.153.219",
+  "state": "Running"
+}
+> curl.exe -i http://4.178.153.219:8000/
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.12.14
+Date: Sun, 27 Sep 2026 13:33:23 GMT
+Content-Type: application/json
+Content-Length: 76
+Connection: close
+
+{"greeting":"Hello from Azure","hostname":"SandboxHost-639261122889770751"}
+
+> curl.exe -i http://4.178.153.219:8000/healthz
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.12.14
+Date: Sun, 27 Sep 2026 13:33:24 GMT
+Content-Type: application/json
+Content-Length: 22
+Connection: close
+
+{"status":"ok -b3v3"}
+

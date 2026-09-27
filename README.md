@@ -425,6 +425,30 @@ HTTP/1.1 200 OK
 ]
 ```
 
+#### Screenshots from the Azure portal
+
+These come from a second deployment of the same image (digest `e143deac…`), made with the
+same commands only to take portal screenshots, and deleted again afterwards. It got a new
+public IP, `4.178.153.219`. The text record of it is in `evidence/c5-portal-redeploy.txt`. The
+subscription ID is blacked out.
+
+**The image in ACR:** registry `cca1tal6210` holding the `cc-demo` repository.
+
+![cc-demo repository in the cca1tal6210 registry](evidence/screenshots/portal-acr-repository.png)
+
+**The container running in ACI:** status Running, public IP, Linux, France Central.
+
+![aci-cc-a1 overview in the portal](evidence/screenshots/portal-aci-overview.png)
+
+**ACI pulling the image from ACR and starting it:**
+
+![aci-cc-a1 container events](evidence/screenshots/portal-aci-events.png)
+
+**A request to the public IP in the browser.** The hostname matches the `curl` output in
+`evidence/c5-portal-redeploy.txt`.
+
+![Response from the app in the browser](evidence/screenshots/portal-app-response.png)
+
 #### Screenshots of the terminal session
 
 Subscription, tenant and identity IDs are blacked out in the identity screenshot.

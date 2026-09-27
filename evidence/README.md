@@ -21,11 +21,23 @@ command output is plain text; the screenshots only repeat what is already in the
 | [`c2-aci.txt`](c2-aci.txt) | `az container show` (state `Running`, image from ACR, public IP, user-assigned identity) and `az container logs` |
 | [`c3-request.txt`](c3-request.txt) | `curl.exe -i` against the public IP for `/`, `/healthz` and `/count` twice, with status lines and bodies |
 | [`c4-secure-var.txt`](c4-secure-var.txt) | `az container show` environment variables: `GREETING` has a value, `SECRET_TOKEN` reads `null` |
+| [`c5-portal-redeploy.txt`](c5-portal-redeploy.txt) | A second deployment of the same image (same digest), made only to take the portal screenshots: tag and digest in ACR, container `Running`, and `curl` against its public IP `4.178.153.219` |
 
 ## Screenshots
 
-Terminal screenshots of the Part C session, in [`screenshots/`](screenshots/). The
-subscription, tenant and identity IDs are blacked out in `c2-identity-and-aci.png`.
+All in [`screenshots/`](screenshots/). The subscription, tenant and identity IDs are blacked
+out wherever they appeared.
+
+Portal screenshots, taken during the second deployment:
+
+| File | What it shows |
+|:--|:--|
+| `portal-acr-repository.png` | The `cc-demo` repository in the `cca1tal6210` registry |
+| `portal-aci-overview.png` | `aci-cc-a1` Running, with public IP `4.178.153.219`, Linux, France Central |
+| `portal-aci-events.png` | ACI pulling the image from ACR and starting the container |
+| `portal-app-response.png` | The app's JSON response in the browser; the hostname matches `c5-portal-redeploy.txt` |
+
+Terminal screenshots of the original Part C session:
 
 | File | What it shows |
 |:--|:--|
