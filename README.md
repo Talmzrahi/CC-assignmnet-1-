@@ -1,11 +1,8 @@
 # Assignment 1 — Containerise and deploy
 
-> Replace every `TODO` and delete this quote block before submitting. The headings below
-> map onto the rubric — keeping them makes it hard to lose marks for something you
-> actually did. Answer in prose, not bullet fragments.
+**Name:** Tal Mizrahi
 
-**Name:** TODO
-**Campus:** TODO
+**Campus:** Segovia
 
 ## What this is
 
@@ -13,7 +10,8 @@ TODO — two or three sentences. What the application does and what you did to i
 
 ## Build and run it locally
 
-Commands someone else can paste, in order, with no edits beyond a name or a path.
+The commands below are for a bash shell (Linux, macOS, or Git Bash on Windows). In Windows
+PowerShell, use `curl.exe` instead of `curl` and `Start-Sleep 3` instead of `sleep 3`.
 
 ```bash
 docker build -t cc-app:1.0 .
@@ -37,25 +35,35 @@ uid=6210(user6210) gid=6210(user6210) groups=6210(user6210)
 Show the counter surviving a container restart:
 
 ```bash
-curl.exe http://localhost:8000/count
+curl http://localhost:8000/count
 docker rm -f cc
 docker run -d --name cc -p 8000:8000 -v ccdata:/data cc-app:1.0
-Start-Sleep 3
-curl.exe http://localhost:8000/count
+sleep 3
+curl http://localhost:8000/count
+```
 
+Expected output. The count carries on from 2 to 3 even though the container was replaced,
+because the counter file lives in the named volume `ccdata`:
+
+```
 {"count":2,"stored_in":"/data/counter.json"}
 cc
 1e5bb1b5888aae21b6f1d8b074069b049506d198d3d03fa72b54b48860c1762d
 {"count":3,"stored_in":"/data/counter.json"}
 ```
 
-
 Overriding configuration at run time:
 
 ```bash
+docker rm -f cc
 docker run -d --name cc -p 8000:8000 -v ccdata:/data -e GREETING="Hi from Tal" cc-app:1.0
-Start-Sleep 3
-curl.exe http://localhost:8000/
+sleep 3
+curl http://localhost:8000/
+```
+
+Expected output:
+
+```
 cc
 03db806302e5f84b380e80442db56ef84ef57dac83d94fd8d0f794648e285d07
 {"greeting":"Hi from Tal","hostname":"03db806302e5"}
@@ -63,7 +71,7 @@ cc
 
 ## Configuration
 
-|| Variable | Default | What it does |
+| Variable | Default | What it does |
 |:--|:--|:--|
 | `GREETING` | `Hello from the container` | Text returned by `GET /`. Override with `-e GREETING="..."` to change the response without rebuilding. |
 | `DATA_DIR` | `/data` | Folder where the counter file is stored. Matches the `VOLUME` and the folder owned by `user6210`, so the named volume can be written to. |
@@ -98,18 +106,11 @@ cc-demo:b   bd2d89035528        223MB         48.5MB
 cc-demo:c   0d7938084e70        228MB         49.1MB   U
 ```
 
-TODO — attribute each of the two differences. Which one did more work, and what is
-physically in the layers that disappeared at each step?
+**A → B:** There is a difference of 1,042 MB because A uses `python` and not `python-slim`. But this is wasted as even though they are still part of the image, so they are stored and downloaded every time, the Flask app never uses them when it runs because it only needs Python and Flask.
 
-A-B:        there is a difference of 1042mb because a uses python and not python-slim. But this is wasted as even though they are still part of the image, so they are stored and downloaded every time, the Flask app never uses them when it runs because it only needs Python and Flask.
-
-B-C:        The base layer is the same. The only difference is that C has pip twice which makes it heavier with no additional benefits. this is a difference of 4mb.
+**B → C:** The base layer is the same. The only difference is that C has pip twice which makes it heavier with no additional benefits. This is a difference of 4 MB.
 
 Multi-stage did not help here because the builder stage had nothing big to leave behind: installing Flask needs no compilers or build tools. So A→B saved much more (about 1,042 MB) than B→C, which saved nothing.
-
-
-TODO — now generalise. Describe an application where the B → C saving would be far larger
-than it is here, and say what about that application makes the difference.
 
 
 In a case where a dependency is being installed that needs to be compiled every time you create a new image, rather than using a binary, it will have to also use the compiler tools like GCC. Those ones are going to create the actual size difference, not the app or the dependency itself that it's using. An example of this would be a Flask app that utilizes PostgreSQL through psycopg2.
@@ -241,7 +242,9 @@ Build output after changing `/healthz` to `"ok -b3v3"` (full log in `evidence/b3
 
 ## Part C — Azure
 
-The `az` commands you actually ran, in order:
+The commands I ran, in order. They are PowerShell because that is the shell I used on
+Windows. The laptop is arm64 and ACI runs amd64, so the image is built for `linux/amd64`
+without provenance or SBOM attestations.
 
 ```powershell
 # names used throughout
@@ -288,7 +291,9 @@ az group exists --name $RG                              # false
 #### What Azure returned while it was running
 
 The resource group has since been deleted, so this output (copied from `evidence/`) is the
-record of the deployment.
+record of the deployment. The image was built while `app.py` still contained the B3 edit,
+which is why `/healthz` returns `"ok -b3v3"`. `app.py` in this repository is back to the
+original `"ok"`.
 
 **C1: image pushed to ACR** (`evidence/c1-acr.txt`). The image was built for `linux/amd64`
 and the registry holds tag `v1`:
@@ -398,8 +403,7 @@ readable afterwards:
 
 TODO
 
-Evidence: see `evidence/` — the checklist in `evidence/README.md` says what to capture.
-Replace that file with a short index of what you actually captured.
+Every capture is listed in [`evidence/README.md`](evidence/README.md).
 
 ## Before this went to production
 
@@ -414,4 +418,17 @@ affect your grade. Write "None" if you used none.
 
 ## Sources
 
-TODO — anything non-trivial you did not write yourself.
+The application (`app.py`, `requirements.txt`), the `.gitignore` and the evidence checklist
+come from the course starter in
+[fjsuarez/cloud-computing-labs](https://github.com/fjsuarez/cloud-computing-labs),
+`assignment-1`. `Dockerfile.a`, `Dockerfile.b` and `Dockerfile.bad` were written with Claude
+(see AI use). The documentation I relied on:
+
+- Docker, [Multi-stage builds](https://docs.docker.com/build/building/multi-stage/)
+- Docker, [Build cache](https://docs.docker.com/build/cache/)
+- Docker, [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
+- Docker Hub, [official `python` image](https://hub.docker.com/_/python) (tags `3.12.14` and `3.12.14-slim`)
+- Microsoft Learn, [Deploy to ACI from ACR using a managed identity](https://learn.microsoft.com/en-us/azure/container-instances/using-azure-container-registry-mi)
+- Microsoft Learn, [Set environment variables in container instances](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-environment-variables) (secure values)
+- Microsoft Learn, [Azure Container Registry roles and permissions](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-roles) (`AcrPull`)
+- Microsoft Learn, [`az container` CLI reference](https://learn.microsoft.com/en-us/cli/azure/container)
