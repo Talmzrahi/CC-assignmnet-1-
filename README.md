@@ -421,9 +421,18 @@ Every capture is listed in [`evidence/README.md`](evidence/README.md).
 
 ## Before this went to production
 
-TODO — a short, specific paragraph. Not a list of everything you have ever heard about
-production. Pick the two or three things that would actually bite this application first,
-and say why.
+Three things would bite this app first. The first is the server: the app runs on Flask's
+built-in development server, and the ACI logs warn that it should not be used in production.
+It can handle a few users at a time, but it is not built for many, so it would need a
+production server such as Gunicorn. The second is the counter. On ACI, `/data` was not a
+persistent volume, so if the container is restarted or replaced the counter file is lost and
+the count starts again from 1; locally it only survived because of the named volume
+`ccdata`, so Azure would need a mounted volume such as Azure Files. The counter also reads the
+file and writes it back with no lock, so two requests at the same moment can both read the
+same number and one count is lost. The third is security: anyone can reach the app as long
+as it is running, because it sat on a public IP over plain HTTP with no login, so anyone could
+call `/count` and change the number. It should be behind HTTPS and some form of
+authentication.
 
 ## AI use
 
