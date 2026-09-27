@@ -436,8 +436,14 @@ authentication.
 
 ## AI use
 
-TODO — which tools, for what. Required by the course AI policy; acknowledging use does not
-affect your grade. Write "None" if you used none.
+I used only Claude (Anthropic), first in a chat session and then in Claude Code inside VS
+Code. It explained the theory as I worked (image layers, the build cache, multi-stage builds,
+ACR, ACI and managed identities), gave me the commands to run for Parts B and C, and helped me
+with my `Dockerfile`. It wrote the three comparison Dockerfiles (`Dockerfile.a`,
+`Dockerfile.b` and `Dockerfile.bad`), captured some of the evidence, and wrote parts of this
+README: the Part C commands and output, the evidence index, the Sources section and formatting
+fixes. The explanations are my own answers; Claude fixed my sentences and made them more
+accurate.
 
 ## Sources
 
