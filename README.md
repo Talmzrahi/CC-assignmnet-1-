@@ -6,7 +6,11 @@
 
 ## What this is
 
-TODO — two or three sentences. What the application does and what you did to it.
+The app is a small Flask API with three endpoints: `/` returns a greeting, `/count` increases a
+counter stored in `/data`, and `/healthz` sends back the state of the app, `{"status":"ok"}`
+with a 200 response. I wrote the Dockerfile, ran the app as a container, measured the size
+differences between three ways of building the image (`Dockerfile.a`, `Dockerfile.b` and my
+multi-stage `Dockerfile`), and deployed the app to Azure.
 
 ## Build and run it locally
 
