@@ -74,28 +74,46 @@ cc
 
 ### B1 — image size
 
+Sizes are the sum of each image's layers from `docker history` (uncompressed). The
+compressed size that is actually pushed and pulled (`CONTENT SIZE` in `docker image ls`)
+is given in brackets. All three images were built natively for linux/arm64.
+
 | Build | Base | Stages | Size |
 |:--|:--|--:|--:|
-| A — single-stage, full base | `python:3.12` | 1 | TODO |
-| B — single-stage, slim base | | 1 | TODO |
-| C — your `Dockerfile` | | | TODO |
+| A — single-stage, full base | `python:3.12.14` | 1 | ≈ 1,217 MB (405 MB) |
+| B — single-stage, slim base | `python:3.12.14-slim` | 1 | ≈ 175 MB (48.5 MB) |
+| C — my `Dockerfile` | `python:3.12.14-slim` | 2 | ≈ 179 MB (49.1 MB) |
 
 | Step | Saves | What left the image |
 |:--|--:|:--|
-| A → B | TODO | TODO |
-| B → C | TODO | TODO |
+| A → B | ≈ 1,042 MB | Compilers, development headers and tools (gcc, g++, imagemagick, git, etc.) from the full base image's `apt-get install` layers, and a larger Debian base layer |
+| B → C | ≈ −4 MB (C is bigger) | Nothing significant; C gained a second copy of pip inside `/opt/venv` |
 
-Evidence:
+Evidence (full output in `evidence/b1-sizes.txt` and `evidence/b1-site-packages.txt`):
 
 ```
-TODO — paste the output of your own docker image ls / docker history
+IMAGE       ID             DISK USAGE   CONTENT SIZE   EXTRA
+cc-demo:a   d2a54a60a9ca       1.62GB          405MB
+cc-demo:b   bd2d89035528        223MB         48.5MB
+cc-demo:c   0d7938084e70        228MB         49.1MB   U
 ```
 
 TODO — attribute each of the two differences. Which one did more work, and what is
 physically in the layers that disappeared at each step?
 
+A-B:        there is a difference of 1042mb because a uses python and not python-slim. But this is wasted as even though they are still part of the image, so they are stored and downloaded every time, the Flask app never uses them when it runs because it only needs Python and Flask.
+
+B-C:        The base layer is the same. The only difference is that C has pip twice which makes it heavier with no additional benefits. this is a difference of 4mb.
+
+Multi-stage did not help here because the builder stage had nothing big to leave behind: installing Flask needs no compilers or build tools. So A→B saved much more (about 1,042 MB) than B→C, which saved nothing.
+
+
 TODO — now generalise. Describe an application where the B → C saving would be far larger
 than it is here, and say what about that application makes the difference.
+
+
+In a case where a dependency is being installed that needs to be compiled every time you create a new image, rather than using a binary, it will have to also use the compiler tools like GCC. Those ones are going to create the actual size difference, not the app or the dependency itself that it's using. An example of this would be a Flask app that utilizes PostgreSQL through psycopg2.
+
 
 ### B2 — changing one line of source
 
