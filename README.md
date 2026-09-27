@@ -232,6 +232,11 @@ Build output after changing `/healthz` to `"ok -b3v3"` (full log in `evidence/b3
 
 #14 [stage-1 5/5] COPY --from=builder /app.py .
 #14 DONE 0.1s
+
+#15 exporting to image
+#15 exporting layers 1.0s done
+#15 naming to docker.io/library/cc-demo:b3 done
+#15 DONE 1.6s
 ```
 
 ## Part C — Azure
