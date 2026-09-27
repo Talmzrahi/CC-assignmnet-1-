@@ -160,8 +160,14 @@ instructions, and they didn't change besides `app.py`. When a step changes, all 
 
 ### B3 — making the cache worse
 
-TODO — show the reordered Dockerfile, paste the build output next to the output from B2,
-and state the rule you broke in one sentence.
+In `Dockerfile.bad` the same files are built in a different order: `COPY app.py .` comes
+before `pip install`. The build is slower because `pip install` has to run again and
+re-download Flask, and the lines after it have to rebuild too. When `COPY app.py .` is at the
+start, a change to `app.py` causes every line that follows it to rebuild, rather than only a
+few lines at the end.
+
+The rule I broke is that files that change often should be copied after the dependencies are
+installed, and files that rarely change, like `requirements.txt`, should come before.
 
 `Dockerfile.bad` is the same as `Dockerfile` except that `COPY app.py .` has moved to the
 top of the builder stage, and the final stage copies it from the builder:
