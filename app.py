@@ -45,7 +45,7 @@ def count():
 
 @app.get("/healthz")
 def healthz():
-    return jsonify(status="ok")
+    return jsonify(status="ok -b3v3")
 
 
 if __name__ == "__main__":

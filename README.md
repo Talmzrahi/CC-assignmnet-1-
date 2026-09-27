@@ -117,12 +117,44 @@ In a case where a dependency is being installed that needs to be compiled every 
 
 ### B2 — changing one line of source
 
-TODO — say which line you changed. Paste the build output. Name the layers that were
-rebuilt and the ones that came from cache, and explain why, referring to the **order of
-instructions** in your Dockerfile.
+I changed the response of the `/healthz` endpoint in `app.py` 
+to `"ok -b2"`. `COPY app.py .` was the layer that was 
+rebuilt, as Docker found a change in `app.py` that wasn't 
+built yet. The rest of the instructions in the Dockerfile 
+stayed cached, as Docker only cares about inputs and 
+instructions, and they didn't change besides `app.py`. When a step changes, all the steps after it have to rebuild while the steps before it stay cached, and since `COPY app.py .` is near the end of the Dockerfile, after `pip install`, the dependency install stayed cached. In a Dockerfile with a different order this might not be the case. 
+
 
 ```
-TODO
+#6 [builder 1/4] FROM docker.io/library/python:3.12.14-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f
+#6 resolve docker.io/library/python:3.12.14-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 2/4] RUN python -m venv /opt/venv
+#7 CACHED
+
+#8 [builder 3/4] COPY requirements.txt .
+#8 CACHED
+
+#9 [stage-1 3/5] COPY --from=builder /opt/venv /opt/venv
+#9 CACHED
+
+#10 [builder 4/4] RUN pip install --no-cache-dir -r requirements.txt
+#10 CACHED
+
+#11 [stage-1 2/5] RUN useradd --create-home --uid 6210 "user6210"  && mkdir -p /data  && chown user6210:user6210 /data
+#11 CACHED
+
+#12 [stage-1 4/5] WORKDIR /app
+#12 CACHED
+
+#13 [stage-1 5/5] COPY app.py .
+#13 DONE 0.0s
+
+#14 exporting to image
+#14 exporting layers 0.1s done
+#14 naming to docker.io/library/cc-demo:b2 done
+#14 DONE 0.3s
 ```
 
 ### B3 — making the cache worse
@@ -130,8 +162,76 @@ TODO
 TODO — show the reordered Dockerfile, paste the build output next to the output from B2,
 and state the rule you broke in one sentence.
 
+`Dockerfile.bad` is the same as `Dockerfile` except that `COPY app.py .` has moved to the
+top of the builder stage, and the final stage copies it from the builder:
+
+```dockerfile
+FROM python:3.12.14-slim AS builder
+COPY app.py .
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+...
+COPY --from=builder /app.py .
 ```
-TODO
+
+Build output after changing `/healthz` to `"ok -b3v3"` (full log in `evidence/b3-cache.txt`):
+
+```
+#6 [builder 1/5] FROM docker.io/library/python:3.12.14-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f
+#6 resolve docker.io/library/python:3.12.14-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f 0.0s done
+#6 CACHED
+
+#7 [builder 2/5] COPY app.py .
+#7 DONE 0.0s
+
+#8 [builder 3/5] RUN python -m venv /opt/venv
+#8 DONE 3.4s
+
+#9 [builder 4/5] COPY requirements.txt .
+#9 DONE 0.1s
+
+#10 [builder 5/5] RUN pip install --no-cache-dir -r requirements.txt
+#10 0.614 Collecting flask==3.1.0 (from -r requirements.txt (line 1))
+#10 0.689   Downloading flask-3.1.0-py3-none-any.whl.metadata (2.7 kB)
+#10 0.729 Collecting Werkzeug>=3.1 (from flask==3.1.0->-r requirements.txt (line 1))
+#10 0.742   Downloading werkzeug-3.1.8-py3-none-any.whl.metadata (4.0 kB)
+#10 0.767 Collecting Jinja2>=3.1.2 (from flask==3.1.0->-r requirements.txt (line 1))
+#10 0.779   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+#10 0.813 Collecting itsdangerous>=2.2 (from flask==3.1.0->-r requirements.txt (line 1))
+#10 0.825   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+#10 0.857 Collecting click>=8.1.3 (from flask==3.1.0->-r requirements.txt (line 1))
+#10 0.870   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#10 0.884 Collecting blinker>=1.9 (from flask==3.1.0->-r requirements.txt (line 1))
+#10 0.899   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+#10 0.951 Collecting MarkupSafe>=2.0 (from Jinja2>=3.1.2->flask==3.1.0->-r requirements.txt (line 1))
+#10 0.965   Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (2.7 kB)
+#10 0.978 Downloading flask-3.1.0-py3-none-any.whl (102 kB)
+#10 1.000 Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+#10 1.034 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#10 1.056 Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+#10 1.071 Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+#10 1.106 Downloading werkzeug-3.1.8-py3-none-any.whl (226 kB)
+#10 1.140 Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (24 kB)
+#10 1.159 Installing collected packages: MarkupSafe, itsdangerous, click, blinker, Werkzeug, Jinja2, flask
+#10 1.610 Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.3 Werkzeug-3.1.8 blinker-1.9.0 click-8.5.0 flask-3.1.0 itsdangerous-2.2.0
+#10 1.729 
+#10 1.729 [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+#10 1.729 [notice] To update, run: pip install --upgrade pip
+#10 DONE 1.8s
+
+#11 [stage-1 2/5] RUN useradd --create-home --uid 6210 "user6210"  && mkdir -p /data  && chown user6210:user6210 /data
+#11 CACHED
+
+#12 [stage-1 3/5] COPY --from=builder /opt/venv /opt/venv
+#12 DONE 0.3s
+
+#13 [stage-1 4/5] WORKDIR /app
+#13 DONE 0.1s
+
+#14 [stage-1 5/5] COPY --from=builder /app.py .
+#14 DONE 0.1s
 ```
 
 ## Part C — Azure

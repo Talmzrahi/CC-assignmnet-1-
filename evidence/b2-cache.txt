@@ -1,0 +1,57 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 660B 0.0s done
+#1 DONE 0.0s
+
+#2 [auth] library/python:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12.14-slim
+#3 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 128B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 1.43kB done
+#5 DONE 0.0s
+
+#6 [builder 1/4] FROM docker.io/library/python:3.12.14-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f
+#6 resolve docker.io/library/python:3.12.14-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 2/4] RUN python -m venv /opt/venv
+#7 CACHED
+
+#8 [builder 3/4] COPY requirements.txt .
+#8 CACHED
+
+#9 [stage-1 3/5] COPY --from=builder /opt/venv /opt/venv
+#9 CACHED
+
+#10 [builder 4/4] RUN pip install --no-cache-dir -r requirements.txt
+#10 CACHED
+
+#11 [stage-1 2/5] RUN useradd --create-home --uid 6210 "user6210"  && mkdir -p /data  && chown user6210:user6210 /data
+#11 CACHED
+
+#12 [stage-1 4/5] WORKDIR /app
+#12 CACHED
+
+#13 [stage-1 5/5] COPY app.py .
+#13 DONE 0.0s
+
+#14 exporting to image
+#14 exporting layers 0.1s done
+#14 exporting manifest sha256:616fcc59188e5ca84ea67806c34fd92d878548cf139d0c1d049ba3c1289401f5 0.0s done
+#14 exporting config sha256:1741b9f1c6eab47b1c3a13bd5411950429fcaf6077fff9875b2586bf0a67912e 0.0s done
+#14 exporting attestation manifest sha256:962ab842e5431247c3731339c3e9904964d09586951c0e172b728639a7469586 0.0s done
+#14 exporting manifest list sha256:d461a51a745c260ad34f0647e0167fd835ce84378de294def5a63b57bb7bb245 0.0s done
+#14 naming to docker.io/library/cc-demo:b2
+#14 naming to docker.io/library/cc-demo:b2 done
+#14 unpacking to docker.io/library/cc-demo:b2 0.1s done
+#14 DONE 0.3s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ukm9948mpzsyezwp6ddphw7yz
