@@ -1,0 +1,40 @@
+> curl.exe -i http://20.19.132.70:8000/
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.12.14
+Date: Sun, 27 Sep 2026 10:49:34 GMT
+Content-Type: application/json
+Content-Length: 76
+Connection: close
+
+{"greeting":"Hello from Azure","hostname":"SandboxHost-639261028674259153"}
+
+> curl.exe -i http://20.19.132.70:8000/healthz
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.12.14
+Date: Sun, 27 Sep 2026 10:49:34 GMT
+Content-Type: application/json
+Content-Length: 22
+Connection: close
+
+{"status":"ok -b3v3"}
+
+> curl.exe -i http://20.19.132.70:8000/count
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.12.14
+Date: Sun, 27 Sep 2026 10:49:34 GMT
+Content-Type: application/json
+Content-Length: 45
+Connection: close
+
+{"count":1,"stored_in":"/data/counter.json"}
+
+> curl.exe -i http://20.19.132.70:8000/count
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.12.14
+Date: Sun, 27 Sep 2026 10:49:34 GMT
+Content-Type: application/json
+Content-Length: 45
+Connection: close
+
+{"count":2,"stored_in":"/data/counter.json"}
+

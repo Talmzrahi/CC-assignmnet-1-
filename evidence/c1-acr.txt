@@ -1,0 +1,39 @@
+The push refers to repository [cca1tal6210.azurecr.io/cc-demo]
+06ad939ed42b: Waiting
+6b37362b3da7: Waiting
+3764a9a7d1e8: Waiting
+b0dc7f87bef1: Waiting
+b0dc7f87bef1: Waiting
+06ad939ed42b: Waiting
+6b37362b3da7: Waiting
+3764a9a7d1e8: Waiting
+06ad939ed42b: Waiting
+6b37362b3da7: Waiting
+3764a9a7d1e8: Waiting
+b0dc7f87bef1: Waiting
+6b37362b3da7: Waiting
+3764a9a7d1e8: Waiting
+b0dc7f87bef1: Waiting
+06ad939ed42b: Waiting
+06ad939ed42b: Waiting
+3764a9a7d1e8: Waiting
+b0dc7f87bef1: Waiting
+f037cf4a1889: Waiting
+f037cf4a1889: Waiting
+c4503275aa93: Waiting
+06ad939ed42b: Pushed
+c4503275aa93: Waiting
+3764a9a7d1e8: Pushed
+b996c5333548: Waiting
+b996c5333548: Waiting
+bfc2075b6144: Waiting
+f037cf4a1889: Pushed
+b996c5333548: Pushed
+bfc2075b6144: Pushed
+c4503275aa93: Pushed
+6b37362b3da7: Pushed
+b0dc7f87bef1: Pushed
+v1: digest: sha256:e143deac5e69771d3ee459acda9f01a3975d3db288d5a31171b8d95a543ccda5 size: 1811
+Result
+--------
+v1

@@ -1,0 +1,13 @@
+> az container show -g rg-cc-a1-tal -n aci-cc-a1 --query containers[0].environmentVariables
+[
+  {
+    "name": "GREETING",
+    "secureValue": null,
+    "value": "Hello from Azure"
+  },
+  {
+    "name": "SECRET_TOKEN",
+    "secureValue": null,
+    "value": null
+  }
+]

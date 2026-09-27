@@ -1,0 +1,20 @@
+{
+  "identity": "UserAssigned",
+  "image": "cca1tal6210.azurecr.io/cc-demo:v1",
+  "ip": "20.19.132.70",
+  "name": "aci-cc-a1",
+  "os": "Linux",
+  "port": 8000,
+  "provisioning": "Succeeded",
+  "state": "Running"
+}
+--- container logs ---
+listening on port 8000
+ * Serving Flask app 'app'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.0.218:8000
+[33mPress CTRL+C to quit[0m
+
