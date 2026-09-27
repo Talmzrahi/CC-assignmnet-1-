@@ -73,6 +73,23 @@ cc
 {"greeting":"Hi from Tal","hostname":"03db806302e5"}
 ```
 
+### Why the Dockerfile looks like this
+
+The `Dockerfile` has two stages. The builder stage creates a virtual environment in
+`/opt/venv` and installs `requirements.txt` into it, and the final stage only copies that
+folder, so anything needed to install the dependencies stays behind in the builder. Both
+stages use `python:3.12.14-slim`, pinned to an exact version instead of `latest`, so a rebuild
+next month gets the same Python. `requirements.txt` is copied and installed before `app.py`, so
+changing the code does not reinstall Flask (B2 and B3 show this with the `CACHED` markers).
+
+The app runs as `user6210` (uid 6210), not root. The user is created and `/data` is created and
+given to that user before `VOLUME /data`, because a named volume takes the ownership of the
+folder from the image. If `/data` still belonged to root, the app could not write the counter
+file. All configuration comes from environment variables with defaults set by `ENV`, so it can
+be changed with `-e` at `docker run` without rebuilding, and `PYTHONUNBUFFERED=1` makes the
+app's output show up straight away in `docker logs` and `az container logs`. The image
+`EXPOSE`s port 8000, and the port on the host is chosen at run time with `-p`.
+
 ## Configuration
 
 | Variable | Default | What it does |
@@ -110,14 +127,37 @@ cc-demo:b   bd2d89035528        223MB         48.5MB
 cc-demo:c   0d7938084e70        228MB         49.1MB   U
 ```
 
-**A → B:** There is a difference of 1,042 MB because A uses `python` and not `python-slim`. But this is wasted as even though they are still part of the image, so they are stored and downloaded every time, the Flask app never uses them when it runs because it only needs Python and Flask.
+**A → B:** There is a difference of 1,042 MB because A uses the full `python:3.12.14` base and
+B uses `python:3.12.14-slim`. Looking at `docker history`, most of it is three layers that only
+the full base has: 679 MB of compilers and development headers (`gcc`, `g++`, `make`,
+`libpq-dev`, `libssl-dev`, `imagemagick` and more), 208 MB of version control tools (`git`,
+`mercurial`, `subversion`, `openssh-client`) and 63.7 MB of download tools (`curl`, `wget`,
+`gnupg`). That is about 951 MB. The rest comes from a bigger Debian base layer (156 MB against
+110 MB) and bigger layers for installing Python itself (about 95 MB against 50 MB). All of
+this is wasted, because even though these tools are part of the image, so they are stored and
+downloaded every time, the Flask app never uses them when it runs. It only needs Python and
+Flask.
 
-**B → C:** The base layer is the same. The only difference is that C has pip twice which makes it heavier with no additional benefits. This is a difference of 4 MB.
+**B → C:** All the base layers are the same in both images (110 MB, 4.99 MB and 44.6 MB). The
+only difference is the layer with the dependencies: in B, `pip install` adds 15.5 MB, and in C,
+`COPY --from=builder /opt/venv` adds 19.3 MB. That is 3.8 MB, so about 4 MB more for C, because
+the venv has its own copy of pip on top of the one already in the base image
+(`evidence/b1-site-packages.txt` shows `pip` in both places). So C has pip twice, which makes
+it heavier with no additional benefits.
 
-Multi-stage did not help here because the builder stage had nothing big to leave behind: installing Flask needs no compilers or build tools. So A→B saved much more (about 1,042 MB) than B→C, which saved nothing.
+Multi-stage did not help here because the builder stage had nothing big to leave behind:
+installing Flask needs no compilers or build tools. So A → B did much more work (about
+1,042 MB) than B → C, which saved nothing and actually added 4 MB.
 
-
-In a case where a dependency is being installed that needs to be compiled every time you create a new image, rather than using a binary, it will have to also use the compiler tools like GCC. Those ones are going to create the actual size difference, not the app or the dependency itself that it's using. An example of this would be a Flask app that utilizes PostgreSQL through psycopg2.
+In a case where a dependency has to be compiled when it is installed, rather than coming as a
+ready-made binary (a wheel), the image also needs compiler tools like `gcc` and development
+headers. Those are going to create the actual size difference, not the app or the dependency
+itself. An example of this would be a Flask app that uses PostgreSQL through `psycopg2`, which
+needs `gcc` and `libpq-dev` to build. On the slim base, a single-stage build has to install
+those tools, and they stay in the final image. In a multi-stage build they are only installed in
+the builder stage, and the final stage only copies the finished `/opt/venv` and installs the
+small runtime library `libpq5`, so the compilers are left behind and B → C would save a lot
+more.
 
 
 ### B2 — changing one line of source
@@ -165,10 +205,11 @@ instructions, and they didn't change besides `app.py`. When a step changes, all 
 ### B3 — making the cache worse
 
 In `Dockerfile.bad` the same files are built in a different order: `COPY app.py .` comes
-before `pip install`. The build is slower because `pip install` has to run again and
-re-download Flask, and the lines after it have to rebuild too. When `COPY app.py .` is at the
-start, a change to `app.py` causes every line that follows it to rebuild, rather than only a
-few lines at the end.
+before `pip install`. The output shows the effect: in B2 `pip install` was `CACHED`, but here
+it says `DONE`, so it had to run again and re-download Flask, and the lines after it had to
+rebuild too. Only `FROM` and `useradd` stayed `CACHED`, so every code change now means a
+slower build. When `COPY app.py .` is at the start, a change to `app.py` causes every line that
+follows it to rebuild, rather than only a few lines at the end.
 
 The rule I broke is that files that change often should be copied after the dependencies are
 installed, and files that rarely change, like `requirements.txt`, should come before.
@@ -413,7 +454,8 @@ readable afterwards:
 
 I passed `SECRET_TOKEN` as a secure environment variable, with the placeholder value
 `not-a-real-secret` rather than a real secret. I proved it is secure by requesting the
-container's configuration from Azure with `az container show` after the deployment: Azure
+container's configuration from Azure's control plane with `az container show` after the
+deployment: Azure
 returned `null` for `SECRET_TOKEN`, while the normal variable `GREETING` showed its value,
 `Hello from Azure` (see C4 above).
 
@@ -439,11 +481,10 @@ authentication.
 I used only Claude (Anthropic), first in a chat session and then in Claude Code inside VS
 Code. It explained the theory as I worked (image layers, the build cache, multi-stage builds,
 ACR, ACI and managed identities), gave me the commands to run for Parts B and C, and helped me
-with my `Dockerfile`. It wrote the three comparison Dockerfiles (`Dockerfile.a`,
-`Dockerfile.b` and `Dockerfile.bad`), captured some of the evidence, and wrote parts of this
-README: the Part C commands and output, the evidence index, the Sources section and formatting
-fixes. The explanations are my own answers; Claude fixed my sentences and made them more
-accurate.
+with my `Dockerfile`. captured some of the evidence, and wrote parts of this
+README: the section on why the Dockerfile looks like this, the Part C commands and output, the
+evidence index, the Sources section and formatting fixes. The explanations are my own answers;
+Claude fixed my sentences, made them more accurate and added the `docker history` numbers to B1.
 
 ## Sources
 
