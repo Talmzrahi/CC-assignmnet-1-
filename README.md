@@ -411,7 +411,11 @@ Subscription, tenant and identity IDs are blacked out in the identity screenshot
 Which value you passed as a **secure** environment variable, and how you know it is not
 readable afterwards:
 
-TODO
+I passed `SECRET_TOKEN` as a secure environment variable, with the placeholder value
+`not-a-real-secret` rather than a real secret. I proved it is secure by requesting the
+container's configuration from Azure with `az container show` after the deployment: Azure
+returned `null` for `SECRET_TOKEN`, while the normal variable `GREETING` showed its value,
+`Hello from Azure` (see C4 above).
 
 Every capture is listed in [`evidence/README.md`](evidence/README.md).
 
